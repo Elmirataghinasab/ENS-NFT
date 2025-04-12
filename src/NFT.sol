@@ -48,7 +48,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     uint256 private constant PRICE_FOR_6_CHARACTERS = 4;
     uint256 private constant PRICE_FOR_7_OR_MORE_CHARACTERS = 2;
 
-    uint256 private constant ETHER_UNIT = 10 ** 18;
+    uint256 private ETHER_UNIT = 10 ** 18;
 
     // Predefined addresses for fee distribution (immutable constants)
     address private constant DAO_CONTRACT_ADDRESS =
@@ -283,7 +283,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
 
     /// @notice Mints a free NFT for Fan Pro users with a 3-character username.
     /// @param username The desired username (must be exactly 3 characters).
-    function getFreeNFT(string calldata username) public {
+    function getFreeNFT(string memory username) public {
         if (!fanCommunity.getFan(msg.sender).isFanPro) {
             revert NotAFanPro();
         }
@@ -314,7 +314,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     /// @param username The desired username (must be exactly 3 characters).
     /// @param user The address to receive the NFT.
     function mintByDao(
-        string calldata username,
+        string memory username,
         address user
     ) public onlyDaoOwner {
         if (String.length(username) != 3) {
