@@ -29,6 +29,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     error NotAFanPro(); // Caller is not a Fan Pro.
     error InvalidUsernameLength(); // The username length is invalid.
     error TransferFailed(); // Token transfer failed.
+    error YouAreNotAFan(); //caller is not a fan
 
     /*//////////////////////////////////////////////////////////////
                               EVENTS
@@ -50,9 +51,9 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
 
 
     // Predefined addresses for fee distribution (immutable constants)
-    address private constant DAO_CONTRACT_ADDRESS =
+    address private DAOContractAddress =
         0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496;
-    address private constant SECOND_CONTRACT_ADDRESS = address(85);
+    address private SecondContractAddress = address(85);
 
     /*//////////////////////////////////////////////////////////////
                            STATE VARIABLES
@@ -120,7 +121,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
 
     /// @notice Restricts function access to the DAO owner.
     modifier onlyDaoOwner() {
-        if (msg.sender != DAO_CONTRACT_ADDRESS) {
+        if (msg.sender != DAOContractAddress) {
             revert NotDaoOwner();
         }
         _;
@@ -169,6 +170,8 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
         uint256 allowedNFTs = unlockedNFTsByLevel[
             fanCommunity.getStar(msg.sender)
         ];
+        checkIsFan(msg.sender);
+
         if (allowedNFTs <= userNFTCount[msg.sender]) {
             revert CannotBuyMoreNFT();
         }
@@ -236,9 +239,9 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
 
             USD.safeTransferFrom(caller, address(this), usdAmount);
             eterAmount = GC.buy((usdAmount * 100) / 105);
-            bool success1 = GC.transfer(DAO_CONTRACT_ADDRESS, eterAmount / 2);
+            bool success1 = GC.transfer(DAOContractAddress, eterAmount / 2);
             bool success2 = GC.transfer(
-                SECOND_CONTRACT_ADDRESS,
+                SecondContractAddress,
                 eterAmount / 2
             );
             if (!success1 || !success2) {
@@ -257,9 +260,9 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
                 address(this),
                 amountToSend
             );
-            bool success2 = GC.transfer(DAO_CONTRACT_ADDRESS, eterAmount / 2);
+            bool success2 = GC.transfer(DAOContractAddress, eterAmount / 2);
             bool success3 = GC.transfer(
-                SECOND_CONTRACT_ADDRESS,
+                SecondContractAddress,
                 eterAmount / 2
             );
             if (!success1 || !success2 || !success3) {
@@ -276,13 +279,13 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             require(EC.allowance(caller, address(this)) >= etAmount, "EES27");
             bool success1 = EC.transferFrom(caller, address(this), etAmount);
             bool success2 = EC.transfer(
-                DAO_CONTRACT_ADDRESS,
+                DAOContractAddress,
                 eternalEquivalent / 2
             );
             if (!success1 || !success2) {
                 revert TransferFailed();
             }
-            EC.sell(eternalEquivalent / 2, SECOND_CONTRACT_ADDRESS);
+            EC.sell(eternalEquivalent / 2, SecondContractAddress);
             return true;
         } else {
             revert("EES28");
@@ -414,6 +417,30 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             return buffer;
         }
     }
+    /*//////////////////////////////////////////////////////////////
+                          CONTRACT INITIALIZE FUNCTION
+    //////////////////////////////////////////////////////////////*/
+    function initEternityContracts(
+        address _GC,
+        address _FCC,       
+        address _USD,
+        address _EC,
+        address _DAO,
+        address _SecondContractAddress
+    ) public onlyOwner {
+        GC = Igenerator(_GC);
+        fanCommunity= IfanCommunity(_FCC);
+        USDMetadata = IERC20Metadata(_USD);
+        EC = Ieternal(_EC);
+        DAOContractAddress= _DAO;
+        SecondContractAddress=_SecondContractAddress;
+    }
+        function checkIsFan(address fan) internal view returns (address, uint256) {
+        IfanCommunity.Fan memory f = fanCommunity.getFan(fan);
+        require(f.endOfSubscriptionDate > 0, "EES20");
+
+        return (f.referrer, f.slot);
+    }
 
     /*//////////////////////////////////////////////////////////////
                           GETTER FUNCTIONS
@@ -433,13 +460,13 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     }
 
     /// @notice Returns the DAO contract address.
-    function getDaoAddress() public pure returns (address) {
-        return DAO_CONTRACT_ADDRESS;
+    function getDaoAddress() public view returns (address) {
+        return DAOContractAddress;
     }
 
     /// @notice Returns the secondary contract address.
-    function getSecondContractAddress() public pure returns (address) {
-        return SECOND_CONTRACT_ADDRESS;
+    function getSecondContractAddress() public view returns (address) {
+        return SecondContractAddress;
     }
 
     /// @notice Returns the token ID associated with a username.
