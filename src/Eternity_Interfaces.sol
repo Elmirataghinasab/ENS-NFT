@@ -86,6 +86,8 @@ interface IERC20 {
         address to,
         uint256 value
     ) external returns (bool);
+    function decimals() external view returns (uint8);
+    
 }
 
 interface IERC20Metadata is IERC20 {

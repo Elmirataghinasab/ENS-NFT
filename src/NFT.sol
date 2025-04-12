@@ -2,7 +2,7 @@
 pragma solidity ^0.8.2;
 
 // External Imports
-import {Igenerator, Ieternal, IfanCommunity} from "./ExternalContracts/Eternity_Interfaces.sol";
+import {Igenerator, Ieternal, IfanCommunity , IERC20Metadata} from "./ExternalContracts/Eternity_Interfaces.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC2981, IERC2981} from "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -48,7 +48,6 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     uint256 private constant PRICE_FOR_6_CHARACTERS = 4;
     uint256 private constant PRICE_FOR_7_OR_MORE_CHARACTERS = 2;
 
-    uint256 private ETHER_UNIT = 10 ** 18;
 
     // Predefined addresses for fee distribution (immutable constants)
     address private constant DAO_CONTRACT_ADDRESS =
@@ -76,7 +75,10 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     Ieternal private EC = Ieternal(0xa1340485617478F5b196669E4506b3DBE6B9D6Ea);
     IfanCommunity fanCommunity =
         IfanCommunity(0xDD05ed9e4E14aD0133b285e84eCf836133FA3b7d);
-
+    //metadatas
+    IERC20Metadata private USDMetadata=IERC20Metadata(0xc2132D05D31c914a87C6611C10748AEb04B58e8F);
+    IERC20Metadata private GCMetadata=IERC20Metadata(0xD829E975B00F4cB4ccd8cEfE80525A219D2d3B15);
+    IERC20Metadata private ECMetadata=IERC20Metadata(0xa1340485617478F5b196669E4506b3DBE6B9D6Ea);
     // Mappings
     mapping(address => uint256) private userNFTCount;
     mapping(uint256 => string) private tokenIdToUsername;
@@ -176,7 +178,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
         }
 
         // Determine the payment amount based on username length
-        uint256 amountToPay = ETHER_UNIT;
+        uint256 amountToPay =1;
         uint256 nameLength = String.length(username);
         if (nameLength == 4) {
             amountToPay *= PRICE_FOR_4_CHARACTERS;
@@ -217,15 +219,17 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     /// @notice Internal function to process payments in different tokens.
     /// @param caller The address of the caller.
     /// @param paymentOption The payment option (0 = USD, 1 = GC, 2 = ETERNAL).
-    /// @param eterAmount The amount in eter to be paid.
+    /// @param _eterAmount The amount in eter to be paid.
     /// @return True if payment was successful.
     function _completePayment(
         address caller,
         uint256 paymentOption,
-        uint256 eterAmount
+        uint256 _eterAmount
     ) internal returns (bool) {
         if (paymentOption == 0) {
             // Payment via USD
+            uint256 Decimal=USDMetadata.decimals();
+            uint256 eterAmount=_eterAmount*Decimal;
             uint256 usdAmount = (GC.EterToUSD(eterAmount) * 100) / 95;
             require(USD.balanceOf(caller) >= usdAmount, "EES22");
             require(USD.allowance(caller, address(this)) >= usdAmount, "EES23");
@@ -243,6 +247,8 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             return true;
         } else if (paymentOption == 1) {
             // Payment via GC
+            uint256 Decimal=GCMetadata.decimals();
+            uint256 eterAmount=_eterAmount*Decimal;
             require(GC.balanceOf(caller) >= eterAmount, "EES24");
             require(GC.allowance(caller, address(this)) >= eterAmount, "EES25");
             uint256 amountToSend = (eterAmount * 100) / 94;
@@ -262,6 +268,8 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             return true;
         } else if (paymentOption == 2) {
             // Payment via ETERNAL
+            uint256 Decimal=ECMetadata.decimals();
+            uint256 eterAmount=_eterAmount*Decimal;
             uint256 eternalEquivalent = EC.EterToET(eterAmount);
             uint256 etAmount = (eternalEquivalent * 100) / 97;
             require(EC.balanceOf(caller) >= etAmount, "EES26");
