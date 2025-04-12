@@ -231,7 +231,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
     ) internal returns (bool) {
         if (paymentOption == 0) {
             // Payment via USD
-            uint256 Decimal=USDMetadata.decimals();
+            uint256 Decimal=10**(USDMetadata.decimals());
             uint256 eterAmount=_eterAmount*Decimal;
             uint256 usdAmount = (GC.EterToUSD(eterAmount) * 100) / 95;
             require(USD.balanceOf(caller) >= usdAmount, "EES22");
@@ -250,7 +250,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             return true;
         } else if (paymentOption == 1) {
             // Payment via GC
-            uint256 Decimal=GCMetadata.decimals();
+            uint256 Decimal=10**(GCMetadata.decimals());
             uint256 eterAmount=_eterAmount*Decimal;
             require(GC.balanceOf(caller) >= eterAmount, "EES24");
             require(GC.allowance(caller, address(this)) >= eterAmount, "EES25");
@@ -271,7 +271,7 @@ contract EternityIdentification is ERC721, ERC2981, Ownable {
             return true;
         } else if (paymentOption == 2) {
             // Payment via ETERNAL
-            uint256 Decimal=ECMetadata.decimals();
+            uint256 Decimal=10**(ECMetadata.decimals());
             uint256 eterAmount=_eterAmount*Decimal;
             uint256 eternalEquivalent = EC.EterToET(eterAmount);
             uint256 etAmount = (eternalEquivalent * 100) / 97;
